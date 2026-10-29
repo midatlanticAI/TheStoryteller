@@ -191,7 +191,10 @@ When a message begins with "[Storyteller]" it comes from the pane: the player pr
     await $.ui.open({ id: PANE, title: "Storyteller" });
     if (verb === "new") {
       void $.prompt.submit({ text: `[Storyteller] Set up a new campaign${arg ? ` called "${arg}"` : ""}. Call storyteller_canon with no campaign loaded is not possible, so first ask me, in one short message, for: a campaign name, how many human players, and for each party member a name, species, and archetype (list the playable species and archetypes from the Shannara world: Human, Elf, Half-Elf, Dwarf, Gnome, Rock Troll; Valeman, Highlander, Borderman, Warrior of the Anar, Elven Hunter, Tracker, Thief, Healer of Storlock, Loremaster, Troll Soldier). Offer to fill in two engine-run companions. Then call storyteller_new_campaign and open with the first scene via storyteller_scene.` });
-      return { text: "Setting up a new campaign." };
+      return {
+        text: "Setting up a new campaign. The Game Master will ask for a name and a party.",
+        context: [`The person ran /storyteller new${arg ? ` with the name "${arg}"` : ""}. If no "[Storyteller]" setup message follows this, do the setup yourself now: ask in one short message for a campaign name, how many human players, and each party member's name, species, and archetype; offer two engine-run companions; then call storyteller_new_campaign and open with the first scene via storyteller_scene.`],
+      };
     }
     if (verb === "load") {
       if (!arg) return { text: "Usage: /storyteller load <file>" };
@@ -199,7 +202,7 @@ When a message begins with "[Storyteller]" it comes from the pane: the player pr
         session = await loadFile($, arg.startsWith(SAVE_DIR) || arg.startsWith("/") ? arg : `${SAVE_DIR}/${arg}`);
         await refresh($, "Loaded.");
         void $.prompt.submit({ text: `[Storyteller] The campaign "${session.campaign.name}" is loaded. Call storyteller_canon and storyteller_status, then continue from the latest scene (write a short recap first).` });
-        return { text: `Loaded ${session.campaign.name}.` };
+        return { text: `Loaded ${session.campaign.name}.`, context: [`The person loaded the campaign "${session.campaign.name}". If no "[Storyteller]" message follows this, call storyteller_canon and storyteller_status now and continue from the latest scene with a short recap.`] };
       } catch (error) {
         return { text: `Could not load: ${error instanceof Error ? error.message : String(error)}` };
       }

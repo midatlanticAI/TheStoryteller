@@ -37,7 +37,13 @@ Then open the printed URL on a phone or desktop. Settings holds the narrator
 choice: offline needs nothing; Claude needs an Anthropic API key, stored only in
 that browser.
 
-Claude Code mod: see `apps/claude-mod/README.md`.
+Claude Code mod, installed globally for your user from any terminal session:
+
+```
+/plugin install storyteller --marketplace midatlanticAI/TheStoryteller
+```
+
+Then `/storyteller new`. Details and the local-clone install in `apps/claude-mod/README.md`.
 
 ## How a turn works
 

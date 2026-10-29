@@ -12,10 +12,43 @@ pnpm build:mod
 
 That writes `hooks/storyteller.js` from the workspace packages.
 
+## Install globally
+
+This repository is a plugin marketplace, so one line at the prompt of any Claude Code
+terminal session installs the mod for your user, in every project:
+
+```
+/plugin install storyteller --marketplace midatlanticAI/TheStoryteller
+```
+
+Answer `y` to add the marketplace, then pick the user scope. From a shell:
+
+```bash
+claude plugin install storyteller --marketplace midatlanticAI/TheStoryteller
+```
+
+That reads the repository's default branch. Until this work is merged there, or to
+run your own edits live, install from a local clone instead:
+
+```bash
+claude plugin marketplace add /path/to/TheStoryteller
+```
+
+```bash
+claude plugin install storyteller@storyteller
+```
+
+A plugin installed from a folder marketplace runs from that folder, so after editing
+it (or rebuilding the bundle with `pnpm build:mod`) `/reload-plugins` picks up the
+change with no reinstall. For a one-off run without installing:
+
+```bash
+claude --plugin-dir /path/to/TheStoryteller/apps/claude-mod
+```
+
 ## Play
 
-Load the folder as a plugin (`claude --plugin-dir apps/claude-mod`, or add it as a
-marketplace folder), then:
+In any session with the mod installed:
 
 ```
 /storyteller new

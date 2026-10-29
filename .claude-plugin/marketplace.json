@@ -1,0 +1,14 @@
+{
+  "name": "storyteller",
+  "owner": {
+    "name": "John"
+  },
+  "description": "Storyteller: a persistent party RPG engine with story worlds, playable inside Claude Code.",
+  "plugins": [
+    {
+      "name": "storyteller",
+      "source": "./apps/claude-mod",
+      "description": "Play Storyteller, a Shannara tabletop RPG, in a pane with Claude as Game Master."
+    }
+  ]
+}
