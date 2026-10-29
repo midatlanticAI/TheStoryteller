@@ -1,0 +1,17 @@
+{
+  "name": "@storyteller/claude-mod",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Claude Code mod: play Storyteller in a pane with Claude as Game Master. Bundles the engine and world packs into the hooks module.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "echo 'type-checked by claude plugin validate'"
+  },
+  "dependencies": {
+    "@storyteller/engine": "workspace:*",
+    "@storyteller/world-shannara": "workspace:*"
+  },
+  "devDependencies": { "esbuild": "^0.28.0" }
+}

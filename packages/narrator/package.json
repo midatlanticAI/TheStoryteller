@@ -1,0 +1,17 @@
+{
+  "name": "@storyteller/narrator",
+  "version": "0.1.0",
+  "description": "Narrator adapters: Claude via the Anthropic SDK (structured scene output, prompt caching) and the engine's offline narrator.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean --sourcemap --external @anthropic-ai/sdk",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": { "@anthropic-ai/sdk": "^1.3.0", "@storyteller/engine": "workspace:*" },
+  "devDependencies": { "tsup": "^8.3.0", "typescript": "^5.6.0", "vitest": "^3.0.0" }
+}

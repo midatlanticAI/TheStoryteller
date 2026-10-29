@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+*.log
+.env
+.env.*
+coverage/
+apps/web/dev-dist/
+apps/claude-mod/.claude-plugin/types/
+storyteller-campaigns/

@@ -1,0 +1,28 @@
+{
+  "name": "@storyteller/engine",
+  "version": "0.1.0",
+  "description": "World-agnostic rules engine: dice, characters, party, combat, magic cost, travel, validated action log.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean --sourcemap",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  }
+}

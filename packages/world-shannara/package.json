@@ -1,0 +1,17 @@
+{
+  "name": "@storyteller/world-shannara",
+  "version": "0.1.0",
+  "description": "Story world pack: the Four Lands and the outer realms of Terry Brooks' Shannara, as paraphrased canon data. Fan work, unlicensed, non-commercial.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean --sourcemap",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": { "@storyteller/engine": "workspace:*" },
+  "devDependencies": { "tsup": "^8.3.0", "typescript": "^5.6.0", "vitest": "^3.0.0" }
+}
