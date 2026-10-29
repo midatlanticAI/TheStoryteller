@@ -9,3 +9,6 @@ coverage/
 apps/web/dev-dist/
 apps/claude-mod/.claude-plugin/types/
 storyteller-campaigns/
+
+# The shelved Android app stays on disk but is no longer tracked
+legacy/

@@ -17,7 +17,6 @@ publishers. The world pack is paraphrased summary, never quoted text.
 | `packages/narrator` | Claude narrator through the Anthropic SDK: structured scene output, cached canon block, refusal fallback. |
 | `apps/web` | Mobile-first PWA. Local saves, export/import, solo and hotseat party play, offline or Claude narrator. |
 | `apps/claude-mod` | Claude Code mod: play in a pane with Claude as GM through engine tools. |
-| `legacy/` | The original Android app this repo started as, shelved. |
 
 ## Run
 
