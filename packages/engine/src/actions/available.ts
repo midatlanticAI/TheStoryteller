@@ -2,6 +2,7 @@ import type { World } from "../world";
 import type { Campaign } from "../model/campaign";
 import type { Action } from "./types";
 import { canCast } from "../rules/magic";
+import { locationOpen } from "./apply";
 
 export interface AvailableAction {
   action: Action;
@@ -42,7 +43,7 @@ export function availableActions(world: World, c: Campaign): AvailableAction[] {
   } else if (loc) {
     for (const exit of loc.exits) {
       const dest = world.locations.get(exit.to);
-      if (!dest) continue;
+      if (!dest || !locationOpen(world, c, dest)) continue;
       const days = exit.days === 0 ? "nearby" : exit.days === 1 ? "a day" : `${exit.days} days`;
       out.push({ action: { type: "travel", to: exit.to }, label: `Travel to ${dest.name} (${days}, ${exit.route})`, group: "travel" });
     }

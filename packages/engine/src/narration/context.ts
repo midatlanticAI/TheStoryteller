@@ -4,6 +4,7 @@ import type { Campaign } from "../model/campaign";
 import type { Character } from "../model/character";
 import type { GameEvent } from "../actions/types";
 import { availableActions } from "../actions/available";
+import { locationOpen } from "../actions/apply";
 import { watchName } from "../rules/travel";
 import { difficultyName } from "../rules/checks";
 import { ATTENTION } from "../rules/magic";
@@ -117,7 +118,7 @@ export function dynamicBlock(world: World, c: Campaign): string {
   lines.push("Roads out:");
   for (const x of loc.exits) {
     const dest = world.locations.get(x.to);
-    if (!dest) continue;
+    if (!dest || !locationOpen(world, c, dest)) continue;
     lines.push(`- ${dest.name} [${dest.id}]: ${x.days} day(s) by ${x.route}${x.hazards.length ? `; hazards: ${x.hazards.join(", ")}` : ""}. ${dest.summary}`);
   }
   const figuresHere = revealed(world, gate, world.canonFigures.values()).filter((f) => figureHere(f, c.eraId, loc));

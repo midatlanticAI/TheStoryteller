@@ -19,6 +19,7 @@ import { advanceWatches, rollEncounter, WATCHES_PER_DAY } from "../rules/travel"
 import { rollD20, rollDice } from "../dice";
 import { attributeMod } from "../model/character";
 import { SKILLS } from "../world/schema";
+import { gateFromBooks, isRevealed } from "../world/gating";
 
 export interface ApplyResult {
   campaign: Campaign;
@@ -75,6 +76,13 @@ export function validateAction(world: World, campaign: Campaign, action: Action)
     if (err instanceof ActionError) return { ok: false, reason: err.message };
     return { ok: false, reason: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/** A location the party may travel to: revealed by the reading gate and present in the era. */
+export function locationOpen(world: World, c: Campaign, loc: { revealedIn: string; eraIds: string[] }): boolean {
+  const gate = gateFromBooks(world, c.knownBookIds);
+  if (!isRevealed(world, gate, loc)) return false;
+  return loc.eraIds.length === 0 || loc.eraIds.includes(c.eraId);
 }
 
 class Ctx {
@@ -230,6 +238,7 @@ class Ctx {
     const exit = from.exits.find((x) => x.to === to);
     if (!exit) this.fail(`no known road from ${from.name} to "${to}"`);
     const dest = this.world.locations.get(to)!;
+    if (!locationOpen(this.world, this.c, dest)) this.fail(`${dest.name} is not part of this campaign's world yet`);
     this.emit({ type: "travel_started", to, route: exit.route, days: exit.days });
     if (exit.days === 0) return this.arrive(dest.id);
     this.c.party.travel = { fromLocationId: from.id, toLocationId: to, route: exit.route, daysTotal: exit.days, daysLeft: exit.days };

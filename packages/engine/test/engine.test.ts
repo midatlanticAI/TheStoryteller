@@ -189,6 +189,15 @@ describe("spoiler gating", () => {
     expect(ctx.stable).not.toContain("The Villain");
     expect(ctx.dynamic).toContain("Hamlet");
   });
+  it("hides and refuses roads to places beyond the gate, and opens them once read", () => {
+    let c = applyAction(world, fresh(), { type: "travel", to: "well" }).campaign;
+    expect(availableActions(world, c).some((a) => a.action.type === "travel" && a.action.to === "secret")).toBe(false);
+    expect(buildNarratorContext(world, c).dynamic).not.toContain("Secret Place");
+    expect(() => applyAction(world, c, { type: "travel", to: "secret" })).toThrow(/not part of/);
+    c = { ...c, knownBookIds: ["book-one", "book-two"] };
+    expect(availableActions(world, c).some((a) => a.action.type === "travel" && a.action.to === "secret")).toBe(true);
+    expect(applyAction(world, c, { type: "travel", to: "secret" }).campaign.party.locationId).toBe("secret");
+  });
   it("reveals everything with the wildcard", () => {
     const gate = gateFromBooks(world, ["*"]);
     expect(isRevealed(world, gate, world.canonFigures.get("villain")!)).toBe(true);

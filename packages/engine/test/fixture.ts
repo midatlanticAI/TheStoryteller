@@ -55,7 +55,10 @@ export const fixturePack: WorldPackInput = {
       summary: "A well.",
       description: "Mossy stones.",
       dangerTier: 0,
-      exits: [{ to: "hamlet", days: 0, route: "a short walk" }],
+      exits: [
+        { to: "hamlet", days: 0, route: "a short walk" },
+        { to: "secret", days: 1, route: "a path nobody takes" },
+      ],
       revealedIn: "book-one",
     },
     {
@@ -78,7 +81,7 @@ export const fixturePack: WorldPackInput = {
       summary: "Spoilers.",
       description: "Spoilers.",
       dangerTier: 1,
-      exits: [],
+      exits: [{ to: "well", days: 1, route: "a path nobody takes" }],
       revealedIn: "book-two",
     },
   ],
