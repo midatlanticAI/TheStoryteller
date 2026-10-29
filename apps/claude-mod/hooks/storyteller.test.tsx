@@ -75,3 +75,42 @@ test("a campaign can be created, acted in, and shown in the pane", async ($, on)
     await ui.unmount();
   }
 });
+
+test("/storyteller new leaves the kickoff in the prompt box and a choice press submits one", async ($, on) => {
+  engineStandIns(on);
+  const submitted: string[] = [];
+  const filled: string[] = [];
+  on("prompt.submit", (_, e) => {
+    submitted.push(e.text);
+    return { text: e.text };
+  });
+  on("prompt.fill", (_, e) => {
+    filled.push(e.text);
+    return { isFilled: true };
+  });
+  await $.session.start({ cwd: "/", surface: "terminal", isInteractive: true });
+
+  const ran = await $.command.run({ command: "storyteller", args: "new Rivers" });
+  expect(ran.text).toContain("Setting up");
+  expect(ran.context?.[0]).toContain("Rivers");
+  expect(submitted.length).toBe(0);
+  expect(filled.length).toBe(1);
+  expect(filled[0]).toContain("[Storyteller] Set up a new campaign");
+
+  await $.tool.call({
+    tool: "mcp__storyteller__storyteller_new_campaign",
+    name: "Rivers",
+    party: [{ id: "jace", name: "Jace", speciesId: "half-elf", archetypeId: "valeman", playerId: "p1" }],
+  });
+  await $.tool.call({
+    tool: "mcp__storyteller__storyteller_scene",
+    prose: "Evening at the inn.",
+    choices: [{ id: "road", label: "Take the Vale road", actions: [{ type: "travel", to: "duln-forest" }] }],
+  });
+  const ui = await $.ui.mount({ ...PANE, surface: "terminal" });
+  await ui.press({ key: "c-road" });
+  expect(submitted.length).toBe(1);
+  expect(submitted[0]).toContain("The player chose");
+  expect(submitted[0]).toContain("Take the Vale road");
+  await ui.unmount();
+});

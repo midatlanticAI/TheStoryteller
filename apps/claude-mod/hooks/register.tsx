@@ -82,6 +82,36 @@ function viewOf(s: Session | undefined, notice = ""): StorytellerView {
   };
 }
 
+/**
+ * Starts a Game Master turn. The engine may drop a plugin's prompt (the reason
+ * otherwise goes only to the debug log), so on a drop the text is placed in
+ * the prompt box instead and the reason is returned for the person to see.
+ */
+let pendingKickoff: string | undefined;
+
+/**
+ * A command hook holds the turn, so it cannot submit a prompt itself (the
+ * engine refuses it). The command puts the kickoff in the prompt box at once,
+ * so one Enter starts the Game Master, and leaves it for `turn.complete` to
+ * submit on its own; a successful submit then clears the box again.
+ */
+async function deferKickoff($: Dollar, text: string): Promise<void> {
+  pendingKickoff = text;
+  await $.prompt.fill({ text, mode: "replace" }).catch(() => undefined);
+}
+
+async function kickoff($: Dollar, text: string): Promise<string> {
+  try {
+    const sent = await $.prompt.submit({ text });
+    if (!sent.drop) return "";
+    await $.prompt.fill({ text, mode: "replace" }).catch(() => undefined);
+    return `The Game Master's turn was not started (${sent.drop}). The kickoff is in your prompt box: press Enter to begin.`;
+  } catch (error) {
+    await $.prompt.fill({ text, mode: "replace" }).catch(() => undefined);
+    return `The Game Master's turn could not be started (${error instanceof Error ? error.message : String(error)}). The kickoff is in your prompt box: press Enter to begin.`;
+  }
+}
+
 async function save($: Dollar, s: Session) {
   await $.fs.write(s.path, ST.serializeCampaign(s.campaign));
   await $.store.set(STORE_KEY, s.path);
@@ -171,6 +201,21 @@ export const register: Register = (on) => {
     return next(e);
   });
 
+  on("turn.complete", async ($, e, next) => {
+    const done = await next(e);
+    if (pendingKickoff && !e.agentId) {
+      const text = pendingKickoff;
+      pendingKickoff = undefined;
+      try {
+        const sent = await $.prompt.submit({ text });
+        if (!sent.drop) await $.prompt.fill({ text: "", mode: "replace" }).catch(() => undefined);
+      } catch {
+        // The kickoff stays in the prompt box for the person to send.
+      }
+    }
+    return done;
+  });
+
   on("prompt.compose", async ($, e, next) => {
     const base = await next(e);
     if (!session) return base;
@@ -190,9 +235,9 @@ When a message begins with "[Storyteller]" it comes from the pane: the player pr
     const arg = rest.join(" ");
     await $.ui.open({ id: PANE, title: "Storyteller" });
     if (verb === "new") {
-      void $.prompt.submit({ text: `[Storyteller] Set up a new campaign${arg ? ` called "${arg}"` : ""}. Call storyteller_canon with no campaign loaded is not possible, so first ask me, in one short message, for: a campaign name, how many human players, and for each party member a name, species, and archetype (list the playable species and archetypes from the Shannara world: Human, Elf, Half-Elf, Dwarf, Gnome, Rock Troll; Valeman, Highlander, Borderman, Warrior of the Anar, Elven Hunter, Tracker, Thief, Healer of Storlock, Loremaster, Troll Soldier). Offer to fill in two engine-run companions. Then call storyteller_new_campaign and open with the first scene via storyteller_scene.` });
+      await deferKickoff($, `[Storyteller] Set up a new campaign${arg ? ` called "${arg}"` : ""}. No campaign is loaded yet, so first ask me, in one short message, for: a campaign name, how many human players, and for each party member a name, species, and archetype (the playable species are Human, Elf, Half-Elf, Dwarf, Gnome, Rock Troll; the archetypes are Valeman, Highlander, Borderman, Warrior of the Anar, Elven Hunter, Tracker, Thief, Healer of Storlock, Loremaster, Troll Soldier). Offer to fill in two engine-run companions. Then call storyteller_new_campaign and open with the first scene via storyteller_scene.`);
       return {
-        text: "Setting up a new campaign. The Game Master will ask for a name and a party.",
+        text: "Setting up a new campaign. The Game Master will ask for a name and a party: press Enter if the kickoff is waiting in your prompt box.",
         context: [`The person ran /storyteller new${arg ? ` with the name "${arg}"` : ""}. If no "[Storyteller]" setup message follows this, do the setup yourself now: ask in one short message for a campaign name, how many human players, and each party member's name, species, and archetype; offer two engine-run companions; then call storyteller_new_campaign and open with the first scene via storyteller_scene.`],
       };
     }
@@ -201,8 +246,8 @@ When a message begins with "[Storyteller]" it comes from the pane: the player pr
       try {
         session = await loadFile($, arg.startsWith(SAVE_DIR) || arg.startsWith("/") ? arg : `${SAVE_DIR}/${arg}`);
         await refresh($, "Loaded.");
-        void $.prompt.submit({ text: `[Storyteller] The campaign "${session.campaign.name}" is loaded. Call storyteller_canon and storyteller_status, then continue from the latest scene (write a short recap first).` });
-        return { text: `Loaded ${session.campaign.name}.`, context: [`The person loaded the campaign "${session.campaign.name}". If no "[Storyteller]" message follows this, call storyteller_canon and storyteller_status now and continue from the latest scene with a short recap.`] };
+        await deferKickoff($, `[Storyteller] The campaign "${session.campaign.name}" is loaded. Call storyteller_canon and storyteller_status, then continue from the latest scene (write a short recap first).`);
+        return { text: `Loaded ${session.campaign.name}. Press Enter if the kickoff is waiting in your prompt box.`, context: [`The person loaded the campaign "${session.campaign.name}". If no "[Storyteller]" message follows this, call storyteller_canon and storyteller_status now and continue from the latest scene with a short recap.`] };
       } catch (error) {
         return { text: `Could not load: ${error instanceof Error ? error.message : String(error)}` };
       }
@@ -326,7 +371,8 @@ When a message begins with "[Storyteller]" it comes from the pane: the player pr
         await save($, session);
         const events = ST.describeEvents(session.world, session.campaign, r.events);
         await refresh($, "Waiting for the Game Master.");
-        void $.prompt.submit({ text: `[Storyteller] The player chose: "${label}".${events.length ? ` Engine events:\n${events.map((x) => `- ${x}`).join("\n")}` : ""}\nCall storyteller_status, resolve anything still needed with storyteller_act, then write the next scene with storyteller_scene.` });
+        const note = await kickoff($, `[Storyteller] The player chose: "${label}".${events.length ? ` Engine events:\n${events.map((x) => `- ${x}`).join("\n")}` : ""}\nCall storyteller_status, resolve anything still needed with storyteller_act, then write the next scene with storyteller_scene.`);
+        if (note) await refresh($, note);
       } catch (error) {
         await refresh($, `Could not choose: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -334,8 +380,11 @@ When a message begins with "[Storyteller]" it comes from the pane: the player pr
     const say = (value: string) => {
       const t = value.trim();
       if (!t || !session) return;
-      void refresh($, "Waiting for the Game Master.");
-      void $.prompt.submit({ text: `[Storyteller] The player says: "${t}". Call storyteller_status, resolve it with storyteller_act where the rules apply, then write the next scene with storyteller_scene.` });
+      void (async () => {
+        await refresh($, "Waiting for the Game Master.");
+        const note = await kickoff($, `[Storyteller] The player says: "${t}". Call storyteller_status, resolve it with storyteller_act where the rules apply, then write the next scene with storyteller_scene.`);
+        if (note) await refresh($, note);
+      })();
     };
     const H = h as unknown as (...args: unknown[]) => unknown;
     const party = v.party.map((m) =>
