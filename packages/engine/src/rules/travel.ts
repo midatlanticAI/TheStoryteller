@@ -11,7 +11,7 @@ export function advanceWatches(c: Campaign, watches: number): { day: number; wat
 }
 
 export function watchName(watch: number): string {
-  return ["dawn", "day", "dusk", "night"][watch] ?? "day";
+  return ["dawn", "midday", "dusk", "night"][watch] ?? "midday";
 }
 
 /** Chance of an encounter per day of travel at a location. */

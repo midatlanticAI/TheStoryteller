@@ -1,7 +1,7 @@
 import type { World } from "../world";
 import type { Campaign, Combatant, Encounter, Scene } from "../model/campaign";
 import type { Character } from "../model/character";
-import { maxStrain, maxVitality } from "../model/character";
+import { createCharacter, maxStrain, maxVitality } from "../model/character";
 import { ActionError, type Action, type GameEvent } from "./types";
 import { makeCheck } from "../rules/checks";
 import {
@@ -33,13 +33,18 @@ export interface ApplyOptions {
 
 export const MAX_PARTY = 6;
 
+/** Deep-copies plain JSON data; works where structuredClone is missing (mod sandboxes). */
+export function clone<T>(value: T): T {
+  return typeof structuredClone === "function" ? structuredClone(value) : (JSON.parse(JSON.stringify(value)) as T);
+}
+
 /**
  * Applies one action to a campaign and returns the new campaign plus the
  * events it produced. The input campaign is never mutated. Throws ActionError
  * when the action is not legal in the current state.
  */
 export function applyAction(world: World, campaign: Campaign, action: Action, opts: ApplyOptions = {}): ApplyResult {
-  const c: Campaign = structuredClone(campaign);
+  const c: Campaign = clone(campaign);
   const events: GameEvent[] = [];
   const ctx = new Ctx(world, c, events, action);
   ctx.run(action);
@@ -201,6 +206,17 @@ class Ctx {
         return this.discover(a.entryId);
       case "recruit":
         return this.recruit(a.character);
+      case "recruit_new":
+        return this.recruit(
+          createCharacter(this.world, {
+            id: a.id,
+            name: a.name,
+            speciesId: a.speciesId,
+            archetypeId: a.archetypeId,
+            controller: a.playerId ? { kind: "player", playerId: a.playerId } : { kind: "ai" },
+            background: a.background ?? "",
+          }),
+        );
       case "dismiss":
         return this.dismiss(a.characterId);
       case "raise_attention":
@@ -789,7 +805,7 @@ class Ctx {
     if (!this.world.species.has(character.speciesId)) this.fail(`unknown species "${character.speciesId}"`);
     if (!this.world.archetypes.has(character.archetypeId)) this.fail(`unknown archetype "${character.archetypeId}"`);
     for (const i of character.inventory) if (!this.world.items.has(i.itemId)) this.fail(`unknown item "${i.itemId}"`);
-    this.c.characters[character.id] = structuredClone(character);
+    this.c.characters[character.id] = clone(character);
     this.c.party.memberIds.push(character.id);
     this.emit({ type: "recruited", characterId: character.id, name: character.name });
   }

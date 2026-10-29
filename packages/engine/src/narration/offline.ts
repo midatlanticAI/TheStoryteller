@@ -22,9 +22,9 @@ export function offlineNarrate(world: World, c: Campaign, input: NarratorInput, 
     lines.push(`Round ${e.round}. Still standing: ${standing.join(", ")}.`);
   } else if (c.party.travel) {
     const dest = world.locations.get(c.party.travel.toLocationId)!;
-    lines.push(`The road to ${dest.name} runs on. ${c.party.travel.daysLeft} day(s) remain. It is ${watchName(c.watch)} on day ${c.day}.`);
+    lines.push(`The road to ${dest.name} runs on. ${c.party.travel.daysLeft} day(s) remain. It is ${watchName(c.watch)}, day ${c.day}.`);
   } else {
-    lines.push(`${loc.name}. ${loc.summary} It is ${watchName(c.watch)} on day ${c.day}.`);
+    lines.push(`${loc.name}. ${loc.summary} It is ${watchName(c.watch)}, day ${c.day}.`);
   }
   if (input.playerInput && !told.length) lines.unshift(`You consider: "${input.playerInput}".`);
 

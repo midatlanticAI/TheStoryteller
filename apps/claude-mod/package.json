@@ -6,12 +6,14 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "vitest run --passWithNoTests",
+    "test": "claude plugin test .",
     "typecheck": "echo 'type-checked by claude plugin validate'"
   },
   "dependencies": {
     "@storyteller/engine": "workspace:*",
     "@storyteller/world-shannara": "workspace:*"
   },
-  "devDependencies": { "esbuild": "^0.28.0" }
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  }
 }

@@ -1,0 +1,8 @@
+{
+  "name": "storyteller",
+  "version": "0.1.0",
+  "description": "Play Storyteller, a Shannara tabletop RPG, in a pane with Claude as Game Master. Campaign files live in storyteller-campaigns/ in the working directory.",
+  "types": "./types/index.d.ts",
+  "license": "MIT",
+  "author": { "name": "John" }
+}

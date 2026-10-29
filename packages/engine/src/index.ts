@@ -15,4 +15,6 @@ export * from "./rules/travel";
 export * from "./narration/types";
 export * from "./narration/context";
 export * from "./narration/offline";
+export * from "./narration/contract";
+export * from "./narration/turn";
 export * from "./save/serialize";

@@ -47,6 +47,7 @@ export type Action =
   | { type: "update_quest"; id: string; status?: "open" | "done" | "failed"; completeStep?: number; addStep?: string }
   | { type: "discover"; entryId: string }
   | { type: "recruit"; character: Character }
+  | { type: "recruit_new"; id: string; name: string; speciesId: string; archetypeId: string; background?: string; playerId?: string }
   | { type: "dismiss"; characterId: string }
   | { type: "raise_attention"; amount: number; reason: string }
   | { type: "gm_note"; text: string }
