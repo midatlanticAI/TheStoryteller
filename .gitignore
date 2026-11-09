@@ -15,3 +15,4 @@ legacy/
 apps/desktop/src/assets.generated.ts
 .dev.vars
 .wrangler/
+apps/server/src/assets.generated.ts

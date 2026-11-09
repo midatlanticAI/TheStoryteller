@@ -1,5 +1,6 @@
 import { deserializeCampaign, serializeCampaign } from "@storyteller/engine";
 import { authMode, clearSession, currentUser, issueSession } from "./auth";
+import { serveStatic } from "./static";
 import type { Env, User } from "./env";
 
 export { CampaignRoom } from "./room";
@@ -37,7 +38,7 @@ function sameSite(req: Request): boolean {
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
-    if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(req);
+    if (!url.pathname.startsWith("/api/")) return serveStatic(req);
     if (!sameSite(req)) return json({ error: "forbidden" }, 403);
 
     const mode = authMode(env);

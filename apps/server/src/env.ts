@@ -2,7 +2,6 @@ import type { CampaignRoom } from "./room";
 import type { Lobby } from "./lobby";
 
 export interface Env {
-  ASSETS: Fetcher;
   ROOMS: DurableObjectNamespace<CampaignRoom>;
   LOBBY: DurableObjectNamespace<Lobby>;
   /** The passphrase the table shares. A secret. */
