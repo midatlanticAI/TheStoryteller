@@ -95,3 +95,6 @@ details summary { cursor: pointer; }
   .play { max-width: 900px; }
   .drawer { max-height: 70dvh; }
 }
+.banner { background: var(--panel); border-bottom: 1px solid var(--line); padding: 8px 16px; font-family: system-ui, sans-serif; font-size: 0.9em; }
+.banner .link { color: var(--accent); text-decoration: underline; }
+a { color: var(--accent); }

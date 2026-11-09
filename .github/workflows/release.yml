@@ -1,0 +1,83 @@
+name: Build and release the app
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm --filter @storyteller/engine build
+          pnpm --filter @storyteller/world-shannara build
+          pnpm --filter @storyteller/narrator build
+
+      - name: Test
+        run: |
+          pnpm --filter @storyteller/engine test
+          pnpm --filter @storyteller/world-shannara test
+
+      - name: Build the desktop apps
+        run: |
+          pnpm --filter @storyteller/web build
+          pnpm --filter @storyteller/desktop build
+
+      - name: Publish a release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.2.${{ github.run_number }}
+          name: Storyteller 0.2.${{ github.run_number }}
+          make_latest: "true"
+          body: |
+            Download the file for your computer, then run it. It opens Storyteller in its own window.
+
+            - **Windows:** `Storyteller.exe`. Windows may warn about an unrecognised app the first time: choose **More info**, then **Run anyway**.
+            - **Mac (Apple silicon):** `Storyteller-mac`. In Terminal: `chmod +x ~/Downloads/Storyteller-mac && xattr -d com.apple.quarantine ~/Downloads/Storyteller-mac && ~/Downloads/Storyteller-mac`
+            - **Linux:** `Storyteller-linux`. `chmod +x Storyteller-linux && ./Storyteller-linux`
+
+            To have Claude narrate on your Pro or Max subscription, open **Settings** in the app and choose **Sign in with Claude**. If Claude Code is not installed yet, the same screen installs it. Campaigns are saved in `Documents/Storyteller`.
+
+            Built from ${{ github.sha }}.
+          files: |
+            apps/desktop/dist/Storyteller.exe
+            apps/desktop/dist/Storyteller-mac
+            apps/desktop/dist/Storyteller-linux
+
+      - name: Build the browser version for GitHub Pages
+        run: STORYTELLER_BASE=/TheStoryteller/ pnpm --filter @storyteller/web build
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: apps/web/dist
+          publish_branch: gh-pages
+          force_orphan: true

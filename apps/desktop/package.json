@@ -1,0 +1,25 @@
+{
+  "name": "@storyteller/desktop",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Storyteller as a double-click app: serves the game locally, saves campaigns to Documents/Storyteller, and narrates through the player's own Claude Code.",
+  "type": "module",
+  "scripts": {
+    "assets": "node scripts/embed-assets.mjs",
+    "start": "pnpm assets && bun src/main.ts",
+    "build": "pnpm assets && pnpm build:windows && pnpm build:linux && pnpm build:mac",
+    "build:windows": "bun build src/main.ts --compile --minify --target=bun-windows-x64 --outfile dist/Storyteller.exe",
+    "build:linux": "bun build src/main.ts --compile --minify --target=bun-linux-x64 --outfile dist/Storyteller-linux",
+    "build:mac": "bun build src/main.ts --compile --minify --target=bun-darwin-arm64 --outfile dist/Storyteller-mac",
+    "typecheck": "node scripts/embed-assets.mjs --allow-empty && tsc -p tsconfig.json --noEmit",
+    "test": "echo 'covered by the end-to-end check in scripts/smoke.mjs'"
+  },
+  "dependencies": {
+    "@storyteller/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "bun": "^1.4.4",
+    "typescript": "^5.6.0"
+  }
+}

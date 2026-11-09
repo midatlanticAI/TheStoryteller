@@ -12,3 +12,4 @@ storyteller-campaigns/
 
 # The shelved Android app stays on disk but is no longer tracked
 legacy/
+apps/desktop/src/assets.generated.ts

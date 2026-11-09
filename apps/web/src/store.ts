@@ -1,4 +1,24 @@
 import { deserializeCampaign, serializeCampaign, type Campaign } from "@storyteller/engine";
+import { deleteRemote, putRemote, remoteSaves } from "./local";
+
+let remote = false;
+
+/** Turns on write-through to Documents/Storyteller when the desktop app is serving the game. */
+export async function enableRemoteSaves(): Promise<void> {
+  remote = true;
+  const files = await remoteSaves();
+  const known = new Map(listCampaigns().map((c) => [c.id, c.updatedAt]));
+  for (const c of files) {
+    const local = known.get(c.id);
+    if (!local || local < c.updatedAt) writeLocal(c);
+  }
+  for (const id of known.keys()) {
+    if (!files.some((f) => f.id === id)) {
+      const c = loadCampaign(id);
+      if (c) putRemote(c.id, serializeCampaign(c));
+    }
+  }
+}
 
 /**
  * Local-first persistence. Campaigns live in localStorage as the same JSON the
@@ -14,16 +34,20 @@ export interface CampaignSummary {
   turn: number;
 }
 
+export type NarratorChoice = "auto" | "claude-code" | "claude" | "offline";
+
 export interface Settings {
   apiKey: string;
   model: string;
-  narrator: "claude" | "offline";
+  /** Model Claude Code uses for scenes; empty means Claude Code's own default. */
+  codeModel: string;
+  narrator: NarratorChoice;
   showRolls: boolean;
   textSize: "small" | "medium" | "large";
   theme: "system" | "dark" | "light";
 }
 
-export const DEFAULT_SETTINGS: Settings = { apiKey: "", model: "claude-opus-5-5", narrator: "offline", showRolls: true, textSize: "medium", theme: "system" };
+export const DEFAULT_SETTINGS: Settings = { apiKey: "", model: "claude-opus-5-5", codeModel: "", narrator: "auto", showRolls: true, textSize: "medium", theme: "system" };
 
 function safe<T>(fn: () => T, fallback: T): T {
   try {
@@ -45,13 +69,18 @@ export function listCampaigns(): CampaignSummary[] {
   return safe(() => JSON.parse(localStorage.getItem(INDEX_KEY) ?? "[]") as CampaignSummary[], []).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export function saveCampaign(c: Campaign) {
+function writeLocal(c: Campaign) {
   safe(() => {
     localStorage.setItem(`storyteller:campaign:${c.id}`, serializeCampaign(c));
     const index = listCampaigns().filter((x) => x.id !== c.id);
     index.push({ id: c.id, name: c.name, updatedAt: c.updatedAt, turn: c.turn });
     localStorage.setItem(INDEX_KEY, JSON.stringify(index));
   }, undefined);
+}
+
+export function saveCampaign(c: Campaign) {
+  writeLocal(c);
+  if (remote) putRemote(c.id, serializeCampaign(c));
 }
 
 export function loadCampaign(id: string): Campaign | undefined {
@@ -66,6 +95,7 @@ export function deleteCampaign(id: string) {
     localStorage.removeItem(`storyteller:campaign:${id}`);
     localStorage.setItem(INDEX_KEY, JSON.stringify(listCampaigns().filter((x) => x.id !== id)));
   }, undefined);
+  if (remote) deleteRemote(id);
 }
 
 export function exportCampaign(c: Campaign) {

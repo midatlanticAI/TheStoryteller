@@ -14,6 +14,7 @@ import type { Action } from "../actions/types";
 import { applyAction, applyActions, clone } from "../actions/apply";
 import { ActionError } from "../actions/types";
 import { availableActions } from "../actions/available";
+import { buildNarratorContext } from "./context";
 import type { SceneProposal } from "./types";
 
 const Id = z.string().min(1).max(64);
@@ -157,3 +158,50 @@ Rules:
 - Keep the party inside playable regions and the era. Never reveal anything beyond the reading gate.
 - Companions controlled by the engine (marked "companion") speak and act; give them opinions.
 - If the player writes free text, honour the intent with a legal action or explain in prose why the world resists.`;
+
+const UNSUPPORTED_KEYWORDS = new Set(["minLength", "maxLength", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "maxItems", "pattern", "format", "$schema"]);
+
+function relax(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(relax);
+  if (!node || typeof node !== "object") return node;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    if (UNSUPPORTED_KEYWORDS.has(key)) continue;
+    if (key === "minItems" && typeof value === "number" && value > 1) continue;
+    out[key === "oneOf" ? "anyOf" : key] = relax(value);
+  }
+  return out;
+}
+
+/**
+ * The scene contract as a JSON schema a model's structured output accepts:
+ * unions as anyOf, numeric and length limits left out. The engine still checks
+ * those limits when it validates the proposal.
+ */
+export function sceneProposalModelSchema(): Record<string, unknown> {
+  return relax(sceneProposalJsonSchema()) as Record<string, unknown>;
+}
+
+export interface NarratorPrompt {
+  /** GM instructions and the standing canon: stable across turns, so it caches. */
+  system: string;
+  /** The current state, legal actions, and this turn's input. */
+  user: string;
+}
+
+/** The prompt every Claude-backed narrator sends, so they all see the same thing. */
+export function buildNarratorPrompt(world: World, campaign: Campaign, input: { playerInput: string; recentEvents: string[] }): NarratorPrompt {
+  const ctx = buildNarratorContext(world, campaign);
+  const legal = ctx.legal.map((a) => `- ${a.label}: ${JSON.stringify(a.action)}`).join("\n");
+  const user = [
+    ctx.dynamic,
+    "",
+    "## Legal engine actions right now",
+    legal || "(none)",
+    "",
+    "## This turn",
+    input.recentEvents.length ? `Engine events:\n${input.recentEvents.map((e) => `- ${e}`).join("\n")}` : "No engine events.",
+    input.playerInput ? `Player: ${input.playerInput}` : "Open the campaign with its first scene.",
+  ].join("\n");
+  return { system: `${GM_INSTRUCTIONS}\n\n${ctx.stable}`, user };
+}

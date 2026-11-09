@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { runTurn, type Campaign, type GameEvent, type World } from "@storyteller/engine";
-import { narratorFor, usage } from "../narrators";
+import { NARRATOR_LABEL, narratorFor, usage } from "../narrators";
+import type { LocalHealth } from "../local";
 import { exportCampaign, saveCampaign, type Settings } from "../store";
 import { PartyPanel } from "./PartyPanel";
 import { Codex } from "./Codex";
@@ -8,7 +9,7 @@ import { Journal } from "./Journal";
 
 type Drawer = "none" | "party" | "codex" | "journal";
 
-export function Play({ world, initial, settings, onExit }: { world: World; initial: Campaign; settings: Settings; onExit: () => void }) {
+export function Play({ world, initial, settings, local, onExit }: { world: World; initial: Campaign; settings: Settings; local: LocalHealth | undefined; onExit: () => void }) {
   const [campaign, setCampaign] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [eventText, setEventText] = useState<string[]>([]);
@@ -17,7 +18,7 @@ export function Play({ world, initial, settings, onExit }: { world: World; initi
   const [drawer, setDrawer] = useState<Drawer>("none");
   const [freeText, setFreeText] = useState("");
   const [activePlayer, setActivePlayer] = useState(campaign.players[0]!.id);
-  const narrator = useMemo(() => narratorFor(settings), [settings]);
+  const narrator = useMemo(() => narratorFor(settings, local), [settings, local]);
   const bottom = useRef<HTMLDivElement>(null);
 
   const scene = campaign.journal[campaign.journal.length - 1];
@@ -129,7 +130,7 @@ export function Play({ world, initial, settings, onExit }: { world: World; initi
             </ul>
           </details>
         )}
-        {busy && <p className="muted thinking">The narrator is writing…</p>}
+        {busy && <p className="muted thinking">{narrator.name === "offline" ? "…" : "The narrator is writing. A scene takes a few seconds to half a minute."}</p>}
         {wiped && <p className="error">The party has fallen. Export the journal, or start a new campaign.</p>}
         <div ref={bottom} />
       </section>
@@ -166,8 +167,9 @@ export function Play({ world, initial, settings, onExit }: { world: World; initi
             </button>
           </form>
           <p className="muted small">
-            Narrator: {narrator.name}
+            Narrator: {NARRATOR_LABEL[narrator.name] ?? narrator.name}
             {narrator.name === "claude" && usage.turns > 0 ? ` · ${usage.turns} turns, ${usage.cached} cached of ${usage.input + usage.cached} input tokens` : ""}
+            {narrator.name === "claude-code" && usage.turns > 0 ? ` · about ${Math.round(usage.seconds / usage.turns)}s a scene` : ""}
           </p>
         </section>
       )}

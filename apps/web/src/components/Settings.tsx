@@ -1,31 +1,63 @@
+import { useEffect, useState } from "react";
 import type { Settings } from "../store";
+import { account, localHealth, type JobState, type LocalHealth } from "../local";
+import { NARRATOR_LABEL, resolveNarrator } from "../narrators";
 
-export function SettingsPanel({ settings, onChange, onBack }: { settings: Settings; onChange: (s: Settings) => void; onBack: () => void }) {
+export function SettingsPanel({
+  settings,
+  onChange,
+  onBack,
+  local,
+  onLocal,
+}: {
+  settings: Settings;
+  onChange: (s: Settings) => void;
+  onBack: () => void;
+  local: LocalHealth | undefined;
+  onLocal: (h: LocalHealth | undefined) => void;
+}) {
   const set = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
+  const active = resolveNarrator(settings, local);
   return (
     <main className="page">
       <h1>Settings</h1>
+      {local && <ClaudeAccount local={local} onLocal={onLocal} />}
       <fieldset>
         <legend>Narrator</legend>
         <label>
           Who writes the scenes
           <select value={settings.narrator} onChange={(e) => set({ narrator: e.target.value as Settings["narrator"] })}>
+            <option value="auto">Automatic (best available)</option>
+            {local && <option value="claude-code">Claude, with your Claude subscription</option>}
+            <option value="claude">Claude, with an API key</option>
             <option value="offline">Offline (engine only, no AI)</option>
-            <option value="claude">Claude (needs an API key)</option>
           </select>
+          <span className="muted small">Now using: {NARRATOR_LABEL[active]}</span>
         </label>
-        {settings.narrator === "claude" && (
+        {(settings.narrator === "claude-code" || (settings.narrator === "auto" && local)) && (
+          <label>
+            Model for scenes (optional)
+            <input value={settings.codeModel} onChange={(e) => set({ codeModel: e.target.value.trim() })} placeholder="Claude Code's default, e.g. opus or sonnet" />
+            <span className="muted small">Sonnet writes faster; Opus writes better. Leave empty for your Claude Code default.</span>
+          </label>
+        )}
+        {(settings.narrator === "claude" || (settings.narrator === "auto" && !local)) && (
           <>
             <label>
               Anthropic API key
               <input type="password" value={settings.apiKey} onChange={(e) => set({ apiKey: e.target.value })} placeholder="sk-ant-…" autoComplete="off" />
-              <span className="muted small">Stored only in this browser. Calls go straight from this device to Anthropic. Each turn costs a few cents; the standing canon is cached between turns.</span>
+              <span className="muted small">Stored only on this device. Calls go straight from here to Anthropic and bill to the key's Console account.</span>
             </label>
             <label>
               Model
               <input value={settings.model} onChange={(e) => set({ model: e.target.value })} />
             </label>
           </>
+        )}
+        {!local && (
+          <p className="muted small">
+            To play with your Claude subscription instead of an API key, download the Storyteller app from the project's Releases page and sign in from its Settings.
+          </p>
         )}
       </fieldset>
       <fieldset>
@@ -50,7 +82,105 @@ export function SettingsPanel({ settings, onChange, onBack }: { settings: Settin
           </select>
         </label>
       </fieldset>
+      {local && <p className="muted small">Campaign files are saved in {local.savesDir}</p>}
       <button onClick={onBack}>Back</button>
     </main>
+  );
+}
+
+function ClaudeAccount({ local, onLocal }: { local: LocalHealth; onLocal: (h: LocalHealth | undefined) => void }) {
+  const [job, setJob] = useState<JobState>(local.job);
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    if (!job.running) return;
+    const t = setInterval(async () => {
+      const next = await account.job().catch(() => job);
+      setJob(next);
+      if (!next.running) {
+        clearInterval(t);
+        onLocal(await localHealth(true));
+      }
+    }, 1000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job.running]);
+
+  useEffect(() => {
+    if (job.kind === "login" && job.running && job.url) window.open(job.url, "_blank", "noopener");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job.url]);
+
+  const act = async (fn: () => Promise<JobState>) => {
+    setError(undefined);
+    try {
+      setJob(await fn());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const { claude, auth } = local;
+  return (
+    <fieldset>
+      <legend>Claude account</legend>
+      {!claude.found && (
+        <>
+          <p>Claude Code is not installed on this computer. Storyteller uses it to sign in to your Claude subscription and write scenes.</p>
+          <button className="primary" disabled={job.running} onClick={() => void act(account.install)}>
+            Install Claude Code
+          </button>
+        </>
+      )}
+      {claude.found && !auth.loggedIn && (
+        <>
+          <p>Sign in with the Claude account that has your Pro or Max subscription. Your browser opens Claude's sign-in page; come back here when it says you're done.</p>
+          <button className="primary" disabled={job.running} onClick={() => void act(account.login)}>
+            Sign in with Claude
+          </button>
+        </>
+      )}
+      {claude.found && auth.loggedIn && (
+        <div className="row between">
+          <span>
+            Signed in{auth.email ? ` as ${auth.email}` : ""}
+            {auth.subscription ? ` · ${auth.subscription}` : ""}
+            <span className="muted small"> · Claude Code {claude.version}</span>
+          </span>
+          <button disabled={job.running} onClick={() => void act(account.logout)}>
+            Sign out
+          </button>
+        </div>
+      )}
+      {job.running && (
+        <div className="card column">
+          <span>{job.kind === "install" ? "Installing Claude Code…" : job.kind === "login" ? "Waiting for you to finish signing in…" : "Signing out…"}</span>
+          {job.url && (
+            <a href={job.url} target="_blank" rel="noopener noreferrer">
+              Open the sign-in page
+            </a>
+          )}
+          {job.kind === "login" && (
+            <form
+              className="row"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (code.trim()) void act(() => account.code(code)).then(() => setCode(""));
+              }}
+            >
+              <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="If the page shows a code, paste it here" />
+              <button type="submit" disabled={!code.trim()}>
+                Send
+              </button>
+            </form>
+          )}
+          <button onClick={() => void act(account.cancel)}>Cancel</button>
+        </div>
+      )}
+      {!job.running && job.kind !== "none" && job.ok === false && <p className="error">That did not finish. {job.output.trim().split("\n").slice(-3).join(" ")}</p>}
+      {error && <p className="error">{error}</p>}
+      {claude.error && claude.found === false && claude.path && <p className="muted small">{claude.error}</p>}
+    </fieldset>
   );
 }
