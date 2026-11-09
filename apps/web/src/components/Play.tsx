@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { runTurn, type Campaign, type GameEvent, type World } from "@storyteller/engine";
+import { applyAction, runTurn, type Campaign, type GameEvent, type World } from "@storyteller/engine";
 import { NARRATOR_LABEL, narratorFor, usage } from "../narrators";
 import type { LocalHealth } from "../local";
 import { exportCampaign, saveCampaign, type Settings } from "../store";
@@ -14,6 +14,7 @@ export function Play({ world, initial, settings, local, onExit }: { world: World
   const [busy, setBusy] = useState(false);
   const [eventText, setEventText] = useState<string[]>([]);
   const [problems, setProblems] = useState<string[]>([]);
+  const [note, setNote] = useState<string>();
   const [lastEvents, setLastEvents] = useState<GameEvent[]>([]);
   const [drawer, setDrawer] = useState<Drawer>("none");
   const [freeText, setFreeText] = useState("");
@@ -21,6 +22,10 @@ export function Play({ world, initial, settings, local, onExit }: { world: World
   const narrator = useMemo(() => narratorFor(settings, local), [settings, local]);
   const bottom = useRef<HTMLDivElement>(null);
 
+  const update = (c: Campaign) => {
+    setCampaign(c);
+    saveCampaign(c);
+  };
   const scene = campaign.journal[campaign.journal.length - 1];
   const needsOpening = !scene;
 
@@ -31,6 +36,7 @@ export function Play({ world, initial, settings, local, onExit }: { world: World
       const r = await runTurn(world, campaign, narrator, { ...input, playerId: activePlayer });
       setCampaign(r.campaign);
       saveCampaign(r.campaign);
+      setNote(r.note);
       setEventText(r.eventText);
       setLastEvents(r.events);
       setProblems(r.problems);
@@ -82,7 +88,14 @@ export function Play({ world, initial, settings, local, onExit }: { world: World
         </span>
       </div>
 
-      {drawer === "party" && <PartyPanel world={world} campaign={campaign} onChange={(c) => { setCampaign(c); saveCampaign(c); }} />}
+      {drawer === "party" && (
+        <PartyPanel
+          world={world}
+          campaign={campaign}
+          onSkill={(id, skill) => update(applyAction(world, campaign, { type: "improve_skill", characterId: id, skill: skill as never }).campaign)}
+          onEquip={(id, instanceId) => update(applyAction(world, campaign, { type: "equip", characterId: id, instanceId }).campaign)}
+        />
+      )}
       {drawer === "codex" && <Codex world={world} campaign={campaign} />}
       {drawer === "journal" && <Journal campaign={campaign} />}
 
@@ -135,7 +148,7 @@ export function Play({ world, initial, settings, local, onExit }: { world: World
         <div ref={bottom} />
       </section>
 
-      {!busy && scene && !scene.chosenChoiceId && !wiped && (
+      {drawer === "none" && !busy && scene && !scene.chosenChoiceId && !wiped && (
         <section className="choices">
           {campaign.players.length > 1 && (
             <p className="muted small">
@@ -168,7 +181,7 @@ export function Play({ world, initial, settings, local, onExit }: { world: World
           </form>
           <p className="muted small">
             Narrator: {NARRATOR_LABEL[narrator.name] ?? narrator.name}
-            {narrator.name === "claude" && usage.turns > 0 ? ` · ${usage.turns} turns, ${usage.cached} cached of ${usage.input + usage.cached} input tokens` : ""}
+            {narrator.name === "claude" && note ? ` · ${note}` : ""}
             {narrator.name === "claude-code" && usage.turns > 0 ? ` · about ${Math.round(usage.seconds / usage.turns)}s a scene` : ""}
           </p>
         </section>

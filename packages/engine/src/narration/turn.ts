@@ -11,6 +11,8 @@ import type { NarratorInput, SceneProposal } from "./types";
 export interface Narrator {
   readonly name: string;
   narrate(world: World, campaign: Campaign, input: NarratorInput, events: GameEvent[]): Promise<SceneProposal>;
+  /** A short note about the last scene, such as the model chosen and why. */
+  lastNote?(): string | undefined;
 }
 
 export const offlineNarrator: Narrator = {
@@ -30,6 +32,8 @@ export interface TurnInput {
 
 export interface TurnResult {
   campaign: Campaign;
+  /** What the narrator reported about itself this turn, e.g. the model it chose and why. */
+  note?: string;
   events: GameEvent[];
   eventText: string[];
   problems: string[];
@@ -57,7 +61,7 @@ export async function runTurn(world: World, campaign: Campaign, narrator: Narrat
   let used = narrator.name;
   const problems: string[] = [];
   try {
-    proposal = await narrator.narrate(world, current, { playerInput, recentEvents: eventText }, events);
+    proposal = await narrator.narrate(world, current, { playerInput, recentEvents: eventText, ...(input.freeText ? { freeText: input.freeText } : {}) }, events);
   } catch (err) {
     problems.push(`${narrator.name} failed: ${err instanceof Error ? err.message : String(err)}`);
     proposal = offlineNarrate(world, current, { playerInput, recentEvents: eventText }, events);
@@ -65,7 +69,8 @@ export async function runTurn(world: World, campaign: Campaign, narrator: Narrat
   }
   const validated = validateProposal(world, current, proposal, input.freeText);
   problems.push(...validated.problems);
-  return { campaign: validated.campaign, events, eventText, problems, narrator: used };
+  const note = used === narrator.name ? narrator.lastNote?.() : undefined;
+  return { campaign: validated.campaign, events, eventText, problems, narrator: used, ...(note ? { note } : {}) };
 }
 
 /** The actions a narrator proposed and the engine accepted, for logs. */

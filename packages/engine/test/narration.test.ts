@@ -89,3 +89,31 @@ describe("running turns", () => {
     expect(r.campaign.characters["sage-friend"]!.controller.kind).toBe("ai");
   });
 });
+
+describe("shared tables", () => {
+  it("adds players and hands characters between them and the engine", () => {
+    let c = fresh();
+    c = applyAction(world, c, { type: "add_player", id: "p2", name: "Two" }).campaign;
+    expect(() => applyAction(world, c, { type: "add_player", id: "p2", name: "Two" })).toThrow(/already/);
+    c = applyAction(world, c, { type: "assign_controller", characterId: "hero", playerId: "p2" }).campaign;
+    expect(c.characters["hero"]!.controller).toEqual({ kind: "player", playerId: "p2" });
+    c = applyAction(world, c, { type: "assign_controller", characterId: "hero" }).campaign;
+    expect(c.characters["hero"]!.controller.kind).toBe("ai");
+    expect(() => applyAction(world, c, { type: "assign_controller", characterId: "hero", playerId: "nobody" })).toThrow();
+  });
+});
+
+import { sceneWeight } from "../src";
+
+describe("scene weight", () => {
+  it("spends the best model on openings, fights, and criticals, and the quick one on the road", () => {
+    const c = fresh();
+    expect(sceneWeight(world, c, [], {}).weight).toBe("epic");
+    const opened = applyAction(world, c, { type: "scene", prose: "x", choices: [{ id: "a", label: "A", actions: [] }] }).campaign;
+    expect(sceneWeight(world, opened, [{ type: "time_passed", watches: 4, day: 2, watch: 1 }, { type: "travel_progress", to: "woods", daysLeft: 1 }], {}).weight).toBe("light");
+    expect(sceneWeight(world, opened, [{ type: "encounter_started", encounterId: "e", enemies: [], surprise: "none" }], {}).weight).toBe("epic");
+    expect(sceneWeight(world, opened, [], { freeText: "I sing" }).weight).toBe("standard");
+    const arrived = applyAction(world, opened, { type: "travel", to: "well" });
+    expect(sceneWeight(world, arrived.campaign, arrived.events, {}).weight).toBe("standard");
+  });
+});

@@ -1,6 +1,24 @@
-import { applyAction, SKILLS, xpToNext, type Campaign, type World } from "@storyteller/engine";
+import { SKILLS, xpToNext, type Campaign, type World } from "@storyteller/engine";
 
-export function PartyPanel({ world, campaign, onChange }: { world: World; campaign: Campaign; onChange: (c: Campaign) => void }) {
+export interface SeatControls {
+  meId: string;
+  isOwner: boolean;
+  onSeat: (characterId: string, playerId: string | null) => void;
+}
+
+export function PartyPanel({
+  world,
+  campaign,
+  onSkill,
+  onEquip,
+  seats,
+}: {
+  world: World;
+  campaign: Campaign;
+  onSkill: (characterId: string, skill: string) => void;
+  onEquip: (characterId: string, instanceId: string) => void;
+  seats?: SeatControls;
+}) {
   return (
     <aside className="drawer">
       <div className="row">
@@ -13,13 +31,28 @@ export function PartyPanel({ world, campaign, onChange }: { world: World; campai
         const species = world.species.get(ch.speciesId)?.name;
         const arch = world.archetypes.get(ch.archetypeId)?.name;
         const next = xpToNext(ch.xp);
+        const holder = ch.controller.kind === "player" ? ch.controller.playerId : undefined;
+        const holderName = holder ? campaign.players.find((p) => p.id === holder)?.name ?? holder : undefined;
+        const canEdit = !seats || seats.isOwner || holder === seats.meId;
         return (
           <div key={id} className={`card column ${ch.alive ? "" : "dead"}`}>
-            <div className="row between">
+            <div className="row between wrap">
               <strong>
                 {ch.name} <span className="muted">{species} {arch}, level {ch.level}</span>
               </strong>
-              <span className="muted">{ch.controller.kind === "ai" ? "companion" : campaign.players.find((p) => p.id === (ch.controller as { playerId: string }).playerId)?.name}</span>
+              <span className="row tight">
+                <span className="muted">{holderName ?? "companion"}</span>
+                {seats && !holder && (
+                  <button className="small" onClick={() => seats.onSeat(id, seats.meId)}>
+                    Take this seat
+                  </button>
+                )}
+                {seats && holder && (holder === seats.meId || seats.isOwner) && (
+                  <button className="small" onClick={() => seats.onSeat(id, null)}>
+                    {holder === seats.meId ? "Leave seat" : "Free seat"}
+                  </button>
+                )}
+              </span>
             </div>
             <div className="bars">
               <Bar label="Vitality" value={ch.vitality.current} max={ch.vitality.max} kind="vit" />
@@ -37,11 +70,11 @@ export function PartyPanel({ world, campaign, onChange }: { world: World; campai
                 .join(" · ") || "no trained skills"}
               {next !== undefined ? ` · ${next} xp to next level` : ""}
             </p>
-            {ch.unspentSkillPoints > 0 && (
+            {canEdit && ch.unspentSkillPoints > 0 && (
               <div className="row wrap">
                 <span className="small">Spend {ch.unspentSkillPoints} skill point(s):</span>
                 {SKILLS.filter((s) => ch.skills[s] < 5).map((s) => (
-                  <button key={s} className="small" onClick={() => onChange(applyAction(world, campaign, { type: "improve_skill", characterId: id, skill: s }).campaign)}>
+                  <button key={s} className="small" onClick={() => onSkill(id, s)}>
                     {s} +1
                   </button>
                 ))}
@@ -55,8 +88,8 @@ export function PartyPanel({ world, campaign, onChange }: { world: World; campai
                   <span key={i.instanceId} className={equipped ? "equipped" : ""}>
                     {item?.name ?? i.itemId}
                     {i.qty > 1 ? ` x${i.qty}` : ""}
-                    {!equipped && item && ["weapon", "armor", "shield", "talisman", "relic"].includes(item.kind) && (
-                      <button className="small inline" onClick={() => onChange(applyAction(world, campaign, { type: "equip", characterId: id, instanceId: i.instanceId }).campaign)}>
+                    {canEdit && !equipped && item && ["weapon", "armor", "shield", "talisman", "relic"].includes(item.kind) && (
+                      <button className="small inline" onClick={() => onEquip(id, i.instanceId)}>
                         equip
                       </button>
                     )}

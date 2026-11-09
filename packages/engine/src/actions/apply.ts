@@ -219,6 +219,10 @@ class Ctx {
         );
       case "dismiss":
         return this.dismiss(a.characterId);
+      case "add_player":
+        return this.addPlayer(a.id, a.name);
+      case "assign_controller":
+        return this.assignController(a.characterId, a.playerId);
       case "raise_attention":
         return this.raiseAttention(a.amount, a.reason);
       case "gm_note":
@@ -815,6 +819,21 @@ class Ctx {
     this.member(characterId);
     this.c.party.memberIds = this.c.party.memberIds.filter((id) => id !== characterId);
     this.emit({ type: "dismissed", characterId });
+  }
+
+  addPlayer(id: string, name: string) {
+    if (!id.trim() || !name.trim() || name.length > 60) this.fail("a player needs an id and a short name");
+    if (this.c.players.some((p) => p.id === id)) this.fail(`${name} is already at the table`);
+    if (this.c.players.length >= 8) this.fail("the table is full (8 players)");
+    this.c.players.push({ id, name: name.trim() });
+    this.emit({ type: "player_joined", playerId: id, name: name.trim() });
+  }
+
+  assignController(characterId: string, playerId?: string) {
+    const ch = this.member(characterId);
+    if (playerId && !this.c.players.some((p) => p.id === playerId)) this.fail(`no player "${playerId}" at the table`);
+    ch.controller = playerId ? { kind: "player", playerId } : { kind: "ai" };
+    this.emit({ type: "controller_changed", characterId, ...(playerId ? { playerId } : {}) });
   }
 
   // ---- narration -------------------------------------------------------------

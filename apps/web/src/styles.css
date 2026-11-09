@@ -82,7 +82,7 @@ legend { color: var(--muted); font-family: system-ui, sans-serif; font-size: 0.8
 .choices { position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; }
 .choice { text-align: left; font-family: Georgia, serif; font-size: 1em; padding: 10px 12px; }
 .choice .num { display: inline-block; min-width: 1.4em; color: var(--accent); font-family: system-ui, sans-serif; font-size: 0.85em; }
-.drawer { background: var(--panel); border-bottom: 1px solid var(--line); padding: 8px 16px; max-height: 55dvh; overflow: auto; font-family: system-ui, sans-serif; font-size: 0.9em; }
+.drawer { background: var(--panel); border-bottom: 1px solid var(--line); padding: 8px 16px; font-family: system-ui, sans-serif; font-size: 0.9em; }
 .drawer .card { background: var(--bg); }
 .bars { display: flex; flex-direction: column; gap: 4px; }
 .bar { position: relative; flex: 1; height: 20px; background: var(--line); border-radius: 6px; overflow: hidden; }
@@ -93,8 +93,13 @@ legend { color: var(--muted); font-family: system-ui, sans-serif; font-size: 0.8
 details summary { cursor: pointer; }
 @media (min-width: 900px) {
   .play { max-width: 900px; }
-  .drawer { max-height: 70dvh; }
+
 }
 .banner { background: var(--panel); border-bottom: 1px solid var(--line); padding: 8px 16px; font-family: system-ui, sans-serif; font-size: 0.9em; }
 .banner .link { color: var(--accent); text-decoration: underline; }
 a { color: var(--accent); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-left: 4px; vertical-align: middle; }
+.dot.on { background: var(--ok); }
+.code { font-family: ui-monospace, monospace; background: var(--bg); padding: 2px 6px; border-radius: 4px; letter-spacing: 0.1em; }
+.section-gap { margin-top: 28px; }
+.install { color: var(--accent); }

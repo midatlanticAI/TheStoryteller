@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "storyteller-ttop",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "routes": [{ "pattern": "ttop.shannara.midatlantic.ai", "custom_domain": true }],
+  "assets": {
+    "directory": "../web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOMS", "class_name": "CampaignRoom" },
+      { "name": "LOBBY", "class_name": "Lobby" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CampaignRoom", "Lobby"] }],
+  "vars": {
+    "DAILY_TURN_LIMIT": "400",
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": ""
+  },
+  "observability": { "enabled": true }
+}

@@ -1,13 +1,13 @@
 import { useRef, useState } from "react";
 import { deleteCampaign, importCampaign, listCampaigns } from "../store";
 
-export function Home({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string) => void }) {
+export function Home({ onNew, onOpen, title = "Campaigns" }: { onNew: () => void; onOpen: (id: string) => void; title?: string }) {
   const [campaigns, setCampaigns] = useState(() => listCampaigns());
   const [error, setError] = useState<string>();
   const file = useRef<HTMLInputElement>(null);
   return (
-    <main className="page">
-      <h1>Campaigns</h1>
+    <section>
+      <h1>{title}</h1>
       <div className="row">
         <button className="primary" onClick={onNew}>
           New campaign
@@ -57,6 +57,6 @@ export function Home({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string
           </li>
         ))}
       </ul>
-    </main>
+    </section>
   );
 }

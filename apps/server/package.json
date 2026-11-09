@@ -1,0 +1,23 @@
+{
+  "name": "@storyteller/server",
+  "version": "0.3.0",
+  "private": true,
+  "description": "The hosted table: a Cloudflare Worker that serves the Storyteller PWA, gates it with a table passphrase, and runs shared campaigns as live rooms with Claude narrating.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo 'exercised by scripts/smoke.mjs against wrangler dev'"
+  },
+  "dependencies": {
+    "@storyteller/engine": "workspace:*",
+    "@storyteller/narrator": "workspace:*",
+    "@storyteller/world-shannara": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261109.1",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.158.0"
+  }
+}

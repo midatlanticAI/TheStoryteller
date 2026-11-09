@@ -14,7 +14,9 @@
     "dev": "pnpm --filter @storyteller/web dev",
     "build:mod": "pnpm --filter @storyteller/claude-mod build",
     "build:app": "pnpm --filter @storyteller/engine build && pnpm --filter @storyteller/world-shannara build && pnpm --filter @storyteller/narrator build && pnpm --filter @storyteller/web build && pnpm --filter @storyteller/desktop build",
-    "app": "pnpm --filter @storyteller/web build && pnpm --filter @storyteller/desktop start"
+    "app": "pnpm --filter @storyteller/web build && pnpm --filter @storyteller/desktop start",
+    "dev:server": "pnpm --filter @storyteller/web build && pnpm --filter @storyteller/server dev",
+    "deploy": "pnpm --filter @storyteller/engine build && pnpm --filter @storyteller/world-shannara build && pnpm --filter @storyteller/narrator build && pnpm --filter @storyteller/web build && pnpm --filter @storyteller/server deploy"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
@@ -23,7 +25,9 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",
-      "bun"
+      "bun",
+      "workerd",
+      "sharp"
     ]
   }
 }

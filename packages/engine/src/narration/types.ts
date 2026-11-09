@@ -19,4 +19,6 @@ export interface NarratorInput {
   playerInput: string;
   /** Events produced by the actions applied just before narration. */
   recentEvents: string[];
+  /** Free text the player typed, when the turn was not a listed choice. */
+  freeText?: string;
 }

@@ -14,11 +14,23 @@ function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
 }
 
-export function NewCampaign({ world, onCancel, onCreated }: { world: World; onCancel: () => void; onCreated: (c: Campaign) => void }) {
+export function NewCampaign({
+  world,
+  onCancel,
+  onCreated,
+  online,
+}: {
+  world: World;
+  onCancel: () => void;
+  onCreated: (c: Campaign) => void | Promise<void>;
+  /** Set for a shared table: the creator is the only player until friends join. */
+  online?: { id: string; name: string };
+}) {
   const eras = world.pack.eras.filter((e) => e.playable);
   const [name, setName] = useState("A Road from the Vale");
   const [eraId, setEraId] = useState(eras[0]!.id);
-  const [players, setPlayers] = useState<string[]>(["You"]);
+  const [players, setPlayers] = useState<string[]>([online?.name ?? "You"]);
+  const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"solo" | "hotseat">("solo");
   const [knownBooks, setKnownBooks] = useState<string>(world.eras.get(eras[0]!.id)!.bookIds[0]!);
   const gate = useMemo(() => gateFromBooks(world, [knownBooks]), [world, knownBooks]);
@@ -31,9 +43,10 @@ export function NewCampaign({ world, onCancel, onCreated }: { world: World; onCa
   const [error, setError] = useState<string>();
   const books = world.pack.books.filter((b) => world.eras.get(eraId)!.bookIds.includes(b.id) || b.order <= (world.books.get(world.eras.get(eraId)!.bookIds[0]!)?.order ?? 1));
 
-  const create = () => {
+  const create = async () => {
+    setBusy(true);
     try {
-      const playerList = players.map((p, i) => ({ id: `p${i + 1}`, name: p.trim() || `Player ${i + 1}` }));
+      const playerList = online ? [{ id: "p1", name: online.name }] : players.map((p, i) => ({ id: `p${i + 1}`, name: p.trim() || `Player ${i + 1}` }));
       let c = createCampaign(world, { id: `${slug(name)}-${Date.now().toString(36)}`, name: name.trim() || "Untitled", eraId, mode: playerList.length > 1 ? mode : "solo", players: playerList, knownBookIds: [knownBooks] });
       members.forEach((m, i) => {
         c = applyAction(world, c, {
@@ -46,9 +59,11 @@ export function NewCampaign({ world, onCancel, onCreated }: { world: World; onCa
           ...(m.controller === "player" ? { playerId: m.playerId || "p1" } : {}),
         }).campaign;
       });
-      onCreated(c);
+      await onCreated(c);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -56,7 +71,8 @@ export function NewCampaign({ world, onCancel, onCreated }: { world: World; onCa
 
   return (
     <main className="page">
-      <h1>New campaign</h1>
+      <h1>{online ? "New shared campaign" : "New campaign"}</h1>
+      {online && <p className="muted small">Friends join with the invite code once it starts. Seats you leave as companions can be taken by anyone who joins; until then the engine plays them.</p>}
       <label>
         Name
         <input value={name} onChange={(e) => setName(e.target.value)} />
@@ -85,7 +101,7 @@ export function NewCampaign({ world, onCancel, onCreated }: { world: World; onCa
         </select>
         <span className="muted">The narrator never reveals anything from later books.</span>
       </label>
-      <fieldset>
+      {!online && <fieldset>
         <legend>Players</legend>
         {players.map((p, i) => (
           <div className="row" key={i}>
@@ -105,7 +121,7 @@ export function NewCampaign({ world, onCancel, onCreated }: { world: World; onCa
             </label>
           )}
         </div>
-      </fieldset>
+      </fieldset>}
       <fieldset>
         <legend>Party</legend>
         {members.map((m, i) => (
@@ -131,10 +147,10 @@ export function NewCampaign({ world, onCancel, onCreated }: { world: World; onCa
             </div>
             <div className="row">
               <select value={m.controller === "ai" ? "ai" : m.playerId || "p1"} onChange={(e) => edit(i, e.target.value === "ai" ? { controller: "ai", playerId: "" } : { controller: "player", playerId: e.target.value })}>
-                <option value="ai">Companion (engine-run)</option>
-                {players.map((p, j) => (
+                <option value="ai">{online ? "Open seat (a friend or the engine)" : "Companion (engine-run)"}</option>
+                {(online ? [online.name] : players).map((p, j) => (
                   <option key={j} value={`p${j + 1}`}>
-                    Played by {p}
+                    {online ? "Me" : `Played by ${p}`}
                   </option>
                 ))}
               </select>
@@ -152,8 +168,8 @@ export function NewCampaign({ world, onCancel, onCreated }: { world: World; onCa
       </fieldset>
       {error && <p className="error">{error}</p>}
       <div className="row">
-        <button className="primary" onClick={create} disabled={members.length === 0}>
-          Begin
+        <button className="primary" onClick={() => void create()} disabled={members.length === 0 || busy}>
+          {busy ? "Starting…" : "Begin"}
         </button>
         <button onClick={onCancel}>Cancel</button>
       </div>

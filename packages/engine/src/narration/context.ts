@@ -334,6 +334,12 @@ export function describeEvents(world: World, c: Campaign, events: GameEvent[]): 
       case "party_wiped":
         out.push("The whole party has fallen.");
         break;
+      case "player_joined":
+        out.push(`${e.name} joins the table.`);
+        break;
+      case "controller_changed":
+        out.push(`${name(e.characterId)} is now ${e.playerId ? `played by ${c.players.find((p) => p.id === e.playerId)?.name ?? e.playerId}` : "an engine-run companion"}.`);
+        break;
       case "scene_recorded":
       case "gm_note":
         break;

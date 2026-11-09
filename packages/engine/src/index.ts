@@ -17,4 +17,5 @@ export * from "./narration/context";
 export * from "./narration/offline";
 export * from "./narration/contract";
 export * from "./narration/turn";
+export * from "./narration/weight";
 export * from "./save/serialize";

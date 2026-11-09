@@ -49,6 +49,8 @@ export type Action =
   | { type: "recruit"; character: Character }
   | { type: "recruit_new"; id: string; name: string; speciesId: string; archetypeId: string; background?: string; playerId?: string }
   | { type: "dismiss"; characterId: string }
+  | { type: "add_player"; id: string; name: string }
+  | { type: "assign_controller"; characterId: string; playerId?: string }
   | { type: "raise_attention"; amount: number; reason: string }
   | { type: "gm_note"; text: string }
   | { type: "scene"; prose: string; choices: Choice[]; freeText?: string }
@@ -106,6 +108,8 @@ export type GameEvent =
   | { type: "discovered"; entryId: string }
   | { type: "recruited"; characterId: string; name: string }
   | { type: "dismissed"; characterId: string }
+  | { type: "player_joined"; playerId: string; name: string }
+  | { type: "controller_changed"; characterId: string; playerId?: string }
   | { type: "scene_recorded"; seq: number }
   | { type: "choice_made"; choiceId: string; label: string }
   | { type: "gm_note"; text: string }
