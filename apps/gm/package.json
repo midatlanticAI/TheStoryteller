@@ -1,0 +1,14 @@
+{
+  "name": "@storyteller/gm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The hosted Game Master: a container running the unmodified Claude Code, signed in with the owner's own Claude subscription through Claude Code's own login, narrating scenes for the Storyteller server.",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/server.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/server.mjs",
+    "start": "node dist/server.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": { "@storyteller/engine": "workspace:*" },
+  "devDependencies": { "@types/node": "^22.10.0", "esbuild": "^0.28.0", "typescript": "^5.6.0" }
+}

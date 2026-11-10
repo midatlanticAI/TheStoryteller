@@ -6,12 +6,13 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/embed-assets.mjs && wrangler dev",
-    "deploy": "node scripts/embed-assets.mjs && wrangler deploy",
+    "deploy": "pnpm --filter @storyteller/gm build && node scripts/embed-assets.mjs && wrangler deploy",
     "typecheck": "node scripts/embed-assets.mjs --allow-empty && tsc -p tsconfig.json --noEmit",
     "test": "echo 'exercised by scripts/smoke.mjs against wrangler dev'",
     "assets": "node scripts/embed-assets.mjs"
   },
   "dependencies": {
+    "@cloudflare/containers": "^0.3.7",
     "@storyteller/engine": "workspace:*",
     "@storyteller/narrator": "workspace:*",
     "@storyteller/world-shannara": "workspace:*"

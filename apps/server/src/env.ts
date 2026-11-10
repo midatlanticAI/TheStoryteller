@@ -1,9 +1,14 @@
 import type { CampaignRoom } from "./room";
 import type { Lobby } from "./lobby";
+import type { GameMaster } from "./gm";
 
 export interface Env {
   ROOMS: DurableObjectNamespace<CampaignRoom>;
   LOBBY: DurableObjectNamespace<Lobby>;
+  /** The hosted Game Master container (Claude Code on the owner's subscription). Absent on plans without containers. */
+  GM?: DurableObjectNamespace<GameMaster>;
+  /** Unlocks managing the Claude sign-in. A secret, separate from the table passphrase. */
+  OWNER_PASSPHRASE?: string;
   /** The passphrase the table shares. A secret. */
   TABLE_PASSPHRASE?: string;
   /** Signs session cookies. A secret. */

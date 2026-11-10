@@ -53,7 +53,7 @@ export function Tables({
           )}
         </span>
       </div>
-      {health.narrator === "offline" && <p className="muted small">Claude isn't connected on the server yet, so scenes come from the offline narrator.</p>}
+      {health.narrator === "offline" && <p className="muted small">Claude isn't signed in on the server yet, so scenes come from the offline narrator. The table's owner signs in under Settings.</p>}
       <div className="row">
         <button className="primary" onClick={onNew}>
           New shared campaign

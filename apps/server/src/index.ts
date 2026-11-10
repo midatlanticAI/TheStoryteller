@@ -4,6 +4,8 @@ import { serveStatic } from "./static";
 import type { Env, User } from "./env";
 
 export { CampaignRoom } from "./room";
+export { GameMaster } from "./gm";
+import { gmCall, gmHealth } from "./gm";
 export { Lobby } from "./lobby";
 
 const VERSION = "0.3.0";
@@ -45,7 +47,9 @@ export default {
     const user = await currentUser(env, req);
 
     if (url.pathname === "/api/health") {
-      return json({ app: "storyteller-server", version: VERSION, auth: mode, user: user ?? null, narrator: env.ANTHROPIC_API_KEY ? "claude" : "offline" });
+      const gm = user ? await gmHealth(env) : undefined;
+      const narrator = gm?.auth.loggedIn ? "claude-code" : env.ANTHROPIC_API_KEY ? "claude" : "offline";
+      return json({ app: "storyteller-server", version: VERSION, auth: mode, user: user ?? null, narrator, hostedGm: !!env.GM, ownerKeySet: !!env.OWNER_PASSPHRASE });
     }
     if (url.pathname === "/api/session" && req.method === "POST") {
       const body = (await req.json().catch(() => ({}))) as { name?: string; passphrase?: string };
@@ -57,6 +61,18 @@ export default {
 
     if (mode === "closed") return json({ error: "this table is not set up yet: the owner needs to set TABLE_PASSPHRASE and SESSION_SECRET" }, 503);
     if (!user) return json({ error: "sign in first" }, 401);
+
+    if (url.pathname.startsWith("/api/gm/")) {
+      if (!env.GM) return json({ error: "the hosted Game Master is not deployed on this table" }, 501);
+      const key = req.headers.get("x-owner-key") ?? "";
+      if (!env.OWNER_PASSPHRASE || key !== env.OWNER_PASSPHRASE) return json({ error: "only the table's owner manages the Claude sign-in: enter the owner passphrase" }, 403);
+      const sub = url.pathname.slice("/api/gm".length);
+      if (sub === "/health" && req.method === "GET") return json((await gmHealth(env)) ?? { error: "the Game Master is starting" });
+      const allowed = ["/account/job", "/account/login", "/account/logout", "/account/cancel", "/account/code"];
+      if (!allowed.includes(sub)) return json({ error: "not found" }, 404);
+      const r = await gmCall(env, sub, { method: req.method, headers: { "content-type": "application/json" }, body: req.method === "GET" ? null : await req.text() });
+      return new Response(r.body, { status: r.status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+    }
 
     if (url.pathname === "/api/campaigns" && req.method === "GET") {
       return json(await lobby(env).mine(user.id));

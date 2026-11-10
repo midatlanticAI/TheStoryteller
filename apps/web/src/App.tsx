@@ -163,7 +163,7 @@ export function App() {
       )}
       {route.name === "play" && <Play world={world} initial={route.campaign} settings={settings} local={local} onExit={() => setRoute({ name: "home" })} />}
       {route.name === "online" && user && <OnlinePlay world={world} id={route.id} me={user} settings={settings} onExit={() => setRoute({ name: "home" })} />}
-      {route.name === "settings" && <SettingsPanel settings={settings} onChange={setSettings} onBack={() => setRoute({ name: "home" })} local={local} onLocal={setLocal} />}
+      {route.name === "settings" && <SettingsPanel settings={settings} onChange={setSettings} onBack={() => setRoute({ name: "home" })} local={local} onLocal={setLocal} server={server ? { ...server, user } : undefined} />}
     </div>
   );
 }

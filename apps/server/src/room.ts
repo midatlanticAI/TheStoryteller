@@ -13,6 +13,7 @@ import {
 import { AnthropicNarrator, shortName } from "@storyteller/narrator";
 import { loadShannara } from "@storyteller/world-shannara";
 import type { Env, User } from "./env";
+import { gmHealth, subscriptionNarrator } from "./gm";
 
 export type TurnMode = "free" | "rotate";
 
@@ -36,7 +37,7 @@ export interface RoomView {
     lastNote?: string;
     lastEvents: string[];
     lastProblems: string[];
-    narrator: "claude" | "offline";
+    narrator: "claude-code" | "claude" | "offline";
   };
 }
 
@@ -108,7 +109,7 @@ export class CampaignRoom extends DurableObject<Env> {
         ...(this.lastNote ? { lastNote: this.lastNote } : {}),
         lastEvents: this.lastEvents,
         lastProblems: this.lastProblems,
-        narrator: this.env.ANTHROPIC_API_KEY ? "claude" : "offline",
+        narrator: this.subscriptionReady ? "claude-code" : this.env.ANTHROPIC_API_KEY ? "claude" : "offline",
       },
     };
   }
@@ -124,9 +125,15 @@ export class CampaignRoom extends DurableObject<Env> {
     }
   }
 
-  private narrator(): Narrator {
-    if (!this.env.ANTHROPIC_API_KEY) return offlineNarrator;
-    return new AnthropicNarrator({ apiKey: this.env.ANTHROPIC_API_KEY, model: this.meta!.model || "auto" });
+  private subscriptionReady = false;
+
+  /** Your Claude subscription through the hosted Claude Code first, then an API key if one is set, then offline. */
+  private async narrator(): Promise<Narrator> {
+    const gm = await gmHealth(this.env);
+    this.subscriptionReady = !!gm?.auth.loggedIn;
+    if (this.subscriptionReady) return subscriptionNarrator(this.env, this.meta!.model || "auto");
+    if (this.env.ANTHROPIC_API_KEY) return new AnthropicNarrator({ apiKey: this.env.ANTHROPIC_API_KEY, model: this.meta!.model || "auto" });
+    return offlineNarrator;
   }
 
   private isMember(user: User): boolean {
@@ -138,8 +145,8 @@ export class CampaignRoom extends DurableObject<Env> {
     this.broadcast();
     try {
       const limit = Number(this.env.DAILY_TURN_LIMIT ?? "400") || 400;
-      const quota = this.env.ANTHROPIC_API_KEY ? await this.env.LOBBY.get(this.env.LOBBY.idFromName("lobby")).countTurn(limit) : { ok: true };
-      const narrator = quota.ok ? this.narrator() : offlineNarrator;
+      const quota = await this.env.LOBBY.get(this.env.LOBBY.idFromName("lobby")).countTurn(limit);
+      const narrator = quota.ok ? await this.narrator() : offlineNarrator;
       const r = await runTurn(world, this.campaign!, narrator, {
         ...(input.choiceId ? { choiceId: input.choiceId } : {}),
         ...(input.freeText ? { freeText: user ? `${user.name}: ${input.freeText}` : input.freeText } : {}),
@@ -267,7 +274,7 @@ export class CampaignRoom extends DurableObject<Env> {
       if (user.id !== this.meta!.ownerId) return json({ error: "only the table's owner changes its settings" }, 403);
       const body = (await req.json()) as { turnMode?: TurnMode; model?: string };
       if (body.turnMode === "free" || body.turnMode === "rotate") this.meta!.turnMode = body.turnMode;
-      if (typeof body.model === "string" && /^(auto|claude-[a-z0-9-]{3,40})$/.test(body.model)) this.meta!.model = body.model;
+      if (typeof body.model === "string" && /^(auto|haiku|sonnet|opus|claude-[a-z0-9-]{3,40})$/.test(body.model)) this.meta!.model = body.model;
       await this.persist();
       this.broadcast();
       return json({ ok: true });

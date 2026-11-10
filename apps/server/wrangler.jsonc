@@ -9,10 +9,23 @@
   "durable_objects": {
     "bindings": [
       { "name": "ROOMS", "class_name": "CampaignRoom" },
-      { "name": "LOBBY", "class_name": "Lobby" }
+      { "name": "LOBBY", "class_name": "Lobby" },
+      { "name": "GM", "class_name": "GameMaster" }
     ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CampaignRoom", "Lobby"] }],
+  "containers": [
+    {
+      "class_name": "GameMaster",
+      "image": "../gm/Dockerfile",
+      "image_build_context": "../gm",
+      "instance_type": "basic",
+      "max_instances": 1
+    }
+  ],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["CampaignRoom", "Lobby"] },
+    { "tag": "v2", "new_sqlite_classes": ["GameMaster"] }
+  ],
   "vars": {
     "DAILY_TURN_LIMIT": "400",
     "ACCESS_TEAM_DOMAIN": "",

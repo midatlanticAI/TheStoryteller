@@ -11,9 +11,9 @@ type Drawer = "none" | "party" | "codex" | "journal" | "table";
 
 const MODELS: { id: string; label: string }[] = [
   { id: "auto", label: "Smart (Haiku, Sonnet or Opus by scene)" },
-  { id: "claude-opus-5-5", label: "Always Opus 5.5 (best prose)" },
-  { id: "claude-sonnet-5-5", label: "Always Sonnet 5.5 (balanced)" },
-  { id: "claude-haiku-5-5", label: "Always Haiku 5.5 (fastest, cheapest)" },
+  { id: "opus", label: "Always Opus (best prose)" },
+  { id: "sonnet", label: "Always Sonnet (balanced)" },
+  { id: "haiku", label: "Always Haiku (fastest)" },
 ];
 
 export function OnlinePlay({ world, id, me, settings, onExit }: { world: World; id: string; me: ServerUser; settings: Settings; onExit: () => void }) {
@@ -244,7 +244,7 @@ export function OnlinePlay({ world, id, me, settings, onExit }: { world: World; 
           </form>
           {error && <p className="error small">{error}</p>}
           <p className="muted small">
-            {room.narrator === "claude" ? "Claude" : "Offline narrator"}
+            {room.narrator === "claude-code" ? "Claude (your subscription)" : room.narrator === "claude" ? "Claude (API key)" : "Offline narrator"}
             {room.lastNote ? ` · ${room.lastNote}` : ""}
           </p>
         </section>
