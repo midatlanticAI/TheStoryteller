@@ -2,8 +2,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { ASSETS } from "./assets.generated";
-import { findClaude, narrateWithClaude } from "./claude";
-import { authStatus, cancelJob, jobState, sendCode, startInstall, startLogin, startLogout } from "./account";
+import { findClaude, narrateWithClaude } from "@storyteller/claude-code";
+import { authStatus, cancelJob, jobState, sendCode, startInstall, startLogin, startLogout } from "@storyteller/claude-code";
 import { deleteSave, listSaves, savesDir, writeSave } from "./saves";
 
 const VERSION = "0.2.0";

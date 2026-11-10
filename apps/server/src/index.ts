@@ -5,7 +5,7 @@ import type { Env, User } from "./env";
 
 export { CampaignRoom } from "./room";
 export { GameMaster } from "./gm";
-import { gmCall, gmHealth } from "./gm";
+import { gmCall, gmHealth, hasGm } from "./gm";
 export { Lobby } from "./lobby";
 
 const VERSION = "0.3.0";
@@ -49,7 +49,7 @@ export default {
     if (url.pathname === "/api/health") {
       const gm = user ? await gmHealth(env) : undefined;
       const narrator = gm?.auth.loggedIn ? "claude-code" : env.ANTHROPIC_API_KEY ? "claude" : "offline";
-      return json({ app: "storyteller-server", version: VERSION, auth: mode, user: user ?? null, narrator, hostedGm: !!env.GM, ownerKeySet: !!env.OWNER_PASSPHRASE });
+      return json({ app: "storyteller-server", version: VERSION, auth: mode, user: user ?? null, narrator, hostedGm: hasGm(env), ownerKeySet: !!env.OWNER_PASSPHRASE });
     }
     if (url.pathname === "/api/session" && req.method === "POST") {
       const body = (await req.json().catch(() => ({}))) as { name?: string; passphrase?: string };
@@ -63,7 +63,7 @@ export default {
     if (!user) return json({ error: "sign in first" }, 401);
 
     if (url.pathname.startsWith("/api/gm/")) {
-      if (!env.GM) return json({ error: "the hosted Game Master is not deployed on this table" }, 501);
+      if (!hasGm(env)) return json({ error: "this table has no Game Master configured" }, 501);
       const key = req.headers.get("x-owner-key") ?? "";
       if (!env.OWNER_PASSPHRASE || key !== env.OWNER_PASSPHRASE) return json({ error: "only the table's owner manages the Claude sign-in: enter the owner passphrase" }, 403);
       const sub = url.pathname.slice("/api/gm".length);

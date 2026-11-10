@@ -15,7 +15,8 @@
     "test": "echo 'covered by the end-to-end check in scripts/smoke.mjs'"
   },
   "dependencies": {
-    "@storyteller/engine": "workspace:*"
+    "@storyteller/engine": "workspace:*",
+    "@storyteller/claude-code": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

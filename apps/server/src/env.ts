@@ -7,6 +7,9 @@ export interface Env {
   LOBBY: DurableObjectNamespace<Lobby>;
   /** The hosted Game Master container (Claude Code on the owner's subscription). Absent on plans without containers. */
   GM?: DurableObjectNamespace<GameMaster>;
+  /** Your own Game Master, e.g. Docker at home behind a Cloudflare Tunnel: its public URL and the shared token. */
+  GM_URL?: string;
+  GM_TOKEN?: string;
   /** Unlocks managing the Claude sign-in. A secret, separate from the table passphrase. */
   OWNER_PASSPHRASE?: string;
   /** The passphrase the table shares. A secret. */

@@ -19,17 +19,23 @@ export interface GmHealth {
   job: { kind: string; running: boolean; ok?: boolean; url?: string; needsCode: boolean; output: string };
 }
 
-function gm(env: Env) {
-  if (!env.GM) throw new Error("the hosted Game Master is not deployed");
-  return getContainer(env.GM, "game-master");
+/** True when this table has a Game Master: your own Docker host (GM_URL) or a Cloudflare Container (GM binding). */
+export function hasGm(env: Env): boolean {
+  return !!(env.GM_URL && env.GM_TOKEN) || !!env.GM;
 }
 
 export async function gmCall(env: Env, path: string, init?: RequestInit): Promise<Response> {
-  return gm(env).fetch(new Request(`http://gm${path}`, init));
+  if (env.GM_URL && env.GM_TOKEN) {
+    const headers = new Headers(init?.headers);
+    headers.set("authorization", `Bearer ${env.GM_TOKEN}`);
+    return fetch(`${env.GM_URL.replace(/\/$/, "")}${path}`, { ...init, headers });
+  }
+  if (!env.GM) throw new Error("this table has no Game Master configured");
+  return getContainer(env.GM, "game-master").fetch(new Request(`http://gm${path}`, init));
 }
 
 export async function gmHealth(env: Env): Promise<GmHealth | undefined> {
-  if (!env.GM) return undefined;
+  if (!hasGm(env)) return undefined;
   try {
     const r = await gmCall(env, "/health");
     return r.ok ? ((await r.json()) as GmHealth) : undefined;

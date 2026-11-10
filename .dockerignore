@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/.wrangler
+**/.dev.vars
+.git
+legacy
+apps/desktop/src/assets.generated.ts
+apps/server/src/assets.generated.ts
+.env

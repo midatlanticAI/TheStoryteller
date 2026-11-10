@@ -30,6 +30,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@storyteller/claude-code':
+        specifier: workspace:*
+        version: link:../../packages/claude-code
       '@storyteller/engine':
         specifier: workspace:*
         version: link:../../packages/engine
@@ -46,6 +49,9 @@ importers:
 
   apps/gm:
     dependencies:
+      '@storyteller/claude-code':
+        specifier: workspace:*
+        version: link:../../packages/claude-code
       '@storyteller/engine':
         specifier: workspace:*
         version: link:../../packages/engine
@@ -124,6 +130,19 @@ importers:
       vitest:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.5)(lightningcss@1.33.0)(terser@5.51.2)
+
+  packages/claude-code:
+    dependencies:
+      '@storyteller/engine':
+        specifier: workspace:*
+        version: link:../engine
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.5
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
 
   packages/engine:
     dependencies:

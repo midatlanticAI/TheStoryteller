@@ -31,6 +31,31 @@ options in Settings.
 same game on phone or PC once GitHub Pages is published. In the browser, Claude narrates
 with an API key; the subscription sign-in needs the downloaded app.
 
+## Claude on your subscription, from your own Docker
+
+The hosted table narrates through the real Claude Code, signed in with your own
+Claude Pro or Max plan through Claude Code's own login. It runs on any machine with
+Docker and reaches the game through a Cloudflare Tunnel, so no ports are opened.
+
+1. In the Cloudflare dashboard: Zero Trust, Networks, Tunnels, **Create a tunnel**,
+   Cloudflared, name it `storyteller-gm`. Copy the token it shows.
+2. Still in that tunnel, add a **Public hostname**: subdomain `gm-ttop`, domain
+   `midatlantic.ai`, service type `HTTP`, URL `gm:8080`.
+3. On the Docker machine:
+
+   ```bash
+   git clone https://github.com/midatlanticAI/TheStoryteller.git
+   cd TheStoryteller
+   cp .env.example .env    # set GM_TOKEN (matching the Worker's) and TUNNEL_TOKEN
+   docker compose up -d --build
+   ```
+
+4. In the game: Settings, **Claude subscription**, enter the owner passphrase, then
+   **Sign in with Claude**. Approve on Claude's page and paste the code back.
+
+Claude Code keeps its sign-in on the `claude-home` volume, so restarts don't sign you
+out. The game never sees the token.
+
 ## Layout
 
 | Path | What it is |
@@ -38,7 +63,10 @@ with an API key; the subscription sign-in needs the downloaded app.
 | `packages/engine` | World-agnostic rules engine: seeded dice, world-pack schema, characters, validated action log, combat, magic with strain and attention, travel, progression, spoiler gating, narrator contract, save format. |
 | `packages/world-shannara` | The Shannara world pack: 13 eras (Sword era playable), the Four Lands at depth, the outer realms sketched and gated by book. |
 | `packages/narrator` | Claude narrator through the Anthropic SDK: structured scene output, cached canon block, refusal fallback. |
+| `apps/server` | The hosted table on Cloudflare: PWA, passphrase gate, shared campaigns as live rooms. |
 | `apps/web` | The game UI: mobile-first PWA with local saves, export/import, solo and hotseat party play. |
+| `apps/gm` | The Game Master: the unmodified Claude Code plus a small service, run with `compose.yaml` on your own Docker. |
+| `packages/claude-code` | Runs the Claude Code CLI headless for scenes, and drives Claude Code's own sign-in. |
 | `apps/desktop` | The downloadable app: one executable that serves the game, saves to `Documents/Storyteller`, and narrates through the player's own Claude Code sign-in. |
 | `apps/claude-mod` | Claude Code mod: play in a pane with Claude as GM through engine tools. |
 

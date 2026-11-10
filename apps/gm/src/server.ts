@@ -1,6 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { findClaude, narrateWithClaude } from "../../desktop/src/claude";
-import { authStatus, cancelJob, jobState, sendCode, startLogin, startLogout } from "../../desktop/src/account";
+import { authStatus, cancelJob, findClaude, jobState, narrateWithClaude, sendCode, startLogin, startLogout } from "@storyteller/claude-code";
 
 /**
  * Runs inside the container next to Claude Code. Only the Storyteller Worker
@@ -10,6 +9,18 @@ import { authStatus, cancelJob, jobState, sendCode, startLogin, startLogout } fr
  */
 
 const PORT = Number(process.env.PORT ?? 8080);
+/** Shared with the Storyteller Worker; every request must carry it. */
+const GM_TOKEN = process.env.GM_TOKEN ?? "";
+
+function authorized(req: IncomingMessage): boolean {
+  if (!GM_TOKEN) return false;
+  const got = String(req.headers.authorization ?? "");
+  const want = `Bearer ${GM_TOKEN}`;
+  if (got.length !== want.length) return false;
+  let diff = 0;
+  for (let i = 0; i < want.length; i++) diff |= got.charCodeAt(i) ^ want.charCodeAt(i);
+  return diff === 0;
+}
 
 function send(res: ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
@@ -34,6 +45,8 @@ const MODEL_ALIAS = /^(haiku|sonnet|opus|claude-[a-z0-9-]{3,40})$/;
 
 createServer(async (req, res) => {
   const path = new URL(req.url ?? "/", "http://gm").pathname;
+  if (path === "/ping") return send(res, 200, { ok: true });
+  if (!authorized(req)) return send(res, 401, { error: GM_TOKEN ? "unauthorized" : "GM_TOKEN is not set on the Game Master" });
   try {
     if (path === "/health" && req.method === "GET") {
       const claude = await findClaude(true);
